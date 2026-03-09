@@ -1,7 +1,8 @@
 name: Gitleaks
 
 on:
-  [push]
+  push:
+    branches: [ "main" ]
 
 jobs:
   scan:
