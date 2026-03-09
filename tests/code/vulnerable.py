@@ -1,6 +1,9 @@
-import subprocess
+import sqlite3
 
-user_input = input("Enter a command: ")
+conn = sqlite3.connect("test.db")
+cursor = conn.cursor()
 
-# Vulnerable: command injection
-subprocess.call(user_input, shell=True)
+user = input("username: ")
+query = "SELECT * FROM users WHERE name='" + user + "'"
+
+cursor.execute(query)
