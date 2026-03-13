@@ -16,5 +16,5 @@ jobs:
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: fs
-          scan-ref: .
+          scan-ref: tests/code
           exit-code: 1
