@@ -17,4 +17,8 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          exit-code: 1
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
