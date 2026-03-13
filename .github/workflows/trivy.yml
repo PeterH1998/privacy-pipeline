@@ -1,0 +1,20 @@
+name: trivy
+
+on:
+  push:
+    branches: [ "main", "trivy"]
+
+jobs:
+  trivy-fs:
+    name: Trivy Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+
