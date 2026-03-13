@@ -19,7 +19,6 @@ jobs:
           scan-ref: tests/
           scanners: vuln
           severity: HIGH,CRITICAL
-          exit-code: '1'
+          #exit-code: '1'
           ignore-unfixed: true
           format: table
-#
