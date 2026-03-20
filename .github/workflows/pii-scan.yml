@@ -2,7 +2,7 @@ name: PII Scan
 
 on:
   push:
-    branches: [main]
+    branches: [ "pii-scanner" ]
 
 jobs:
   pii-scan:
