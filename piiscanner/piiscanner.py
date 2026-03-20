@@ -30,7 +30,7 @@ def mask_iban(iban):
 
 def main():
     target_dir = Path("tests")
-    flag = False
+    has_findings = False
 
     if not target_dir.exists():
         print("Couldn't find directory")
@@ -39,14 +39,14 @@ def main():
     for item in target_dir.rglob("*"):
         if item.is_file():
 
-            with open(item, "r") as f:
+            with open(item, "r", encoding="utf-8") as f:
                 for line_number, line in enumerate(f, 1):
                     email_matches = EMAIL_PATTERN.findall(line)
                     phone_matches = PHONE_PATTERN.findall(line)
                     iban_matches = IBAN_PATTERN.findall(line)
 
                     if email_matches:
-                        flag = True
+                        has_findings = True
                         for match in email_matches:
                             
                             masked_match = mask_email(match)
@@ -58,7 +58,7 @@ def main():
                             print()
 
                     if phone_matches:
-                        flag = True
+                        has_findings = True
                         for match in phone_matches:
                             masked_match = mask_phone(match)
 
@@ -69,7 +69,7 @@ def main():
                             print()
                     
                     if iban_matches:
-                        flag = True
+                        has_findings = True
                         for match in iban_matches:
                             masked_match = mask_iban(match)
 
@@ -79,7 +79,7 @@ def main():
                             print(f"match_preview: {masked_match}")
                             print()
                 
-    if flag == True:
+    if has_findings:
         sys.exit(1)
     else:
         sys.exit(0)
