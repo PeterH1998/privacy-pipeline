@@ -1,6 +1,6 @@
 # Privacy Pipeline: A CI Security Framework
 
-## 📖 Overview
+## Overview
 
 This project implements a CI pipeline that integrates automated security and privacy scanning into both push and pull request workflows using GitHub Actions.
 
@@ -8,7 +8,7 @@ The goal is to demonstrate how multiple security layers can be applied early in 
 
 ---
 
-## 🔍 What the Pipeline Detects
+## What the Pipeline Detects
 
 The pipeline automatically scans code for:
 
@@ -19,7 +19,7 @@ The pipeline automatically scans code for:
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Each security domain is handled by a separate scanner:
 
@@ -32,7 +32,7 @@ Each scanner runs independently in GitHub Actions and contributes to the overall
 
 ---
 
-## 🧰 Tools Used
+## Tools Used
 
 | Tool                | Purpose                                      |
 |---------------------|----------------------------------------------|
@@ -43,7 +43,7 @@ Each scanner runs independently in GitHub Actions and contributes to the overall
 
 ---
 
-## 🤔 Why These Tools?
+## Why These Tools?
 
 - All tools are free and open-source  
 - Easy integration with GitHub Actions  
@@ -52,7 +52,7 @@ Each scanner runs independently in GitHub Actions and contributes to the overall
 
 ---
 
-## 🔐 Security Approach
+## Security Approach
 
 This pipeline follows a **shift-left security** approach, where security and privacy checks are applied early in the development process.
 
