@@ -81,7 +81,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          skip-dirs: tests/
+          #      skip-dirs: tests/
           scanners: vuln
           severity: HIGH,CRITICAL
           #exit-code: '1'
