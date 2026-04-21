@@ -45,6 +45,9 @@ def main():
     for item in target_dir.rglob("*"):
         if item.is_file():
 
+            if ".git" in item.parts:
+                continue
+
             if exclude_dir and exclude_dir in str(item.as_posix()):
                 continue
 
