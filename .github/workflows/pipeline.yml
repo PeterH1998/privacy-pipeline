@@ -3,6 +3,8 @@ name: Security and Privacy Pipeline
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
   secret_scan:
@@ -41,7 +43,7 @@ jobs:
     permissions:
       security-events: write
       packages: read
-      actions: read
+      actions: write
       contents: read
 
     strategy:
