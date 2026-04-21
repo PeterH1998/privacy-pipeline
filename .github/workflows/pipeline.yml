@@ -5,8 +5,8 @@ on:
     branches: ["main"]
 
 jobs:
-  gitleaks:
-    name: Gitleaks
+  secret_scan:
+    name: Secret Scan (Gitleaks)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -20,7 +20,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: config/testfiles.toml
 
-  pii-scanner:
+  pii_scan:
+    name: Privacy Scan (PII)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -32,10 +33,10 @@ jobs:
           python-version: "3.11"
 
       - name: Run PII Scanner
-        run: python piiscanner/piiscanner.py
+        run: python piiscanner/piiscanner.py --exclude tests/
 
-  codeql:
-    name: Analyze (${{ matrix.language }})
+  sast_scan:
+    name: Static Scan (CodeQL)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -68,8 +69,8 @@ jobs:
         with:
           category: "/language:${{matrix.language}}"
 
-  trivy:
-    name: Trivy Scan
+  dependency_scan:
+    name: Dependency Scan (Trivy)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -79,7 +80,8 @@ jobs:
         uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: fs
-          scan-ref: tests/
+          scan-ref: .
+          skip-dirs: tests/
           scanners: vuln
           severity: HIGH,CRITICAL
           #exit-code: '1'

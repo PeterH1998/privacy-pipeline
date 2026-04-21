@@ -29,8 +29,14 @@ def mask_iban(iban):
 
 
 def main():
-    target_dir = Path("tests")
+    target_dir = Path(".")
+    exclude_dir = None
     has_findings = False
+
+    if "--exclude" in sys.argv:
+        exclude_index = sys.argv.index("--exclude")
+        if len(sys.argv) > exclude_index + 1:
+            exclude_dir = sys.argv[exclude_index + 1]
 
     if not target_dir.exists():
         print("Couldn't find directory")
@@ -38,6 +44,9 @@ def main():
 
     for item in target_dir.rglob("*"):
         if item.is_file():
+
+            if exclude_dir and exclude_dir in str(item.as_posix()):
+                continue
 
             with open(item, "r", encoding="utf-8") as f:
                 for line_number, line in enumerate(f, 1):
