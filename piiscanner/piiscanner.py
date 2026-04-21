@@ -48,7 +48,7 @@ def main():
             if exclude_dir and exclude_dir in str(item.as_posix()):
                 continue
 
-            with open(item, "r", encoding="utf-8") as f:
+            with open(item, "r", encoding="utf-8", errors="ignore") as f:
                 for line_number, line in enumerate(f, 1):
                     email_matches = EMAIL_PATTERN.findall(line)
                     phone_matches = PHONE_PATTERN.findall(line)
