@@ -35,7 +35,7 @@ jobs:
           python-version: "3.11"
 
       - name: Run PII Scanner
-        run: python piiscanner/piiscanner.py --exclude tests/
+        run: python piiscanner/piiscanner.py
 
   sast_scan:
     name: Static Scan (CodeQL)
