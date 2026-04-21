@@ -43,7 +43,7 @@ jobs:
     permissions:
       security-events: write
       packages: read
-      actions: write
+      actions: read
       contents: read
 
     strategy:

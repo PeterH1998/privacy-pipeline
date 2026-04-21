@@ -30,7 +30,6 @@ def mask_iban(iban):
 
 def main():
     target_dir = Path(".")
-    exclude_dir = None
     has_findings = False
 
     if "--exclude" in sys.argv:
