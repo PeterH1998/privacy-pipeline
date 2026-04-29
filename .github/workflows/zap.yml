@@ -1,0 +1,62 @@
+name: ZAP Baseline Scan
+
+on:
+  pull_request:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+jobs:
+  zap-baseline:
+    name: ZAP Baseline Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install demo app dependencies
+        working-directory: demo-app
+        run: pip install -r requirements.txt
+
+      - name: Start demo app
+        working-directory: demo-app
+        run: |
+          nohup python app.py > app.log 2>&1 &
+
+      - name: Wait for demo app
+        run: |
+          for i in {1..15}; do
+            if curl -s http://localhost:5000 > /dev/null; then
+              echo "Demo app is running"
+              exit 0
+            fi
+            echo "Waiting for demo app..."
+            sleep 2
+          done
+
+          echo "Demo app failed to start"
+          exit 1
+
+      - name: Run ZAP Baseline
+        run: |
+          mkdir -p zap-reports
+
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
+            -t ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://localhost:5000 \
+            -r zap-report.html || true
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: zap-reports/zap-report.html

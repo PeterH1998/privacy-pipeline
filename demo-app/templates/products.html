@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Products</title>
+</head>
+<body>
+    <h1>Products</h1>
+    <p>These products are fake and hardcoded for demo purposes.</p>
+
+    <ul>
+        {% for product in products %}
+        <li>
+            {{ product.name }}
+            <a href="/product?id={{ product.id }}">View product {{ product.id }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+    </ul>
+</body>
+</html>
