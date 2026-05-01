@@ -1,0 +1,64 @@
+name: SQLMap Scan
+
+on:
+  push:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+jobs:
+  sqlmap-scan:
+    name: SQLMap Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install demo app dependencies
+        working-directory: demo-app
+        run: pip install -r requirements.txt
+
+      - name: Start demo app
+        working-directory: demo-app
+        run: |
+          nohup python app.py > app.log 2>&1 &
+
+      - name: Wait for demo app
+        run: |
+          for i in {1..15}; do
+            if curl -s "http://localhost:5000/product?id=1" > /dev/null; then
+              echo "Demo app is running"
+              exit 0
+            fi
+            echo "Waiting for demo app..."
+            sleep 2
+          done
+
+          echo "Demo app failed to start"
+          exit 1
+
+      - name: Run sqlmap
+        run: |
+          mkdir -p sqlmap-reports
+
+          docker run --rm \
+            --network host \
+            -v ${{ github.workspace }}/sqlmap-reports:/root/.local/share/sqlmap/output \
+            parrotsec/sqlmap \
+            -u "http://localhost:5000/product?id=1" \
+            --batch \
+            --answers="follow=Y,reduce=Y" \
+            --output-dir=/root/.local/share/sqlmap/output \
+            | tee sqlmap-reports/sqlmap-output.txt || true
+
+      - name: Upload sqlmap report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqlmap-report
+          path: sqlmap-reports/
