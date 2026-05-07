@@ -1,27 +1,31 @@
+import sqlite3
 from flask import Flask, render_template, request, make_response, jsonify
 
 app = Flask(__name__)
 
-# Fake product data used for the demo pages.
-PRODUCTS = [
-    {"id": 1, "name": "Red Widget"},
-    {"id": 2, "name": "Blue Widget"},
-    {"id": 3, "name": "Green Widget"},
-]
+# --- DATABASE SETUP ---
+# A junior dev might run this on startup to ensure the database exists.
+def init_db():
+    conn = sqlite3.connect('demo.db')
+    c = conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT)')
+    c.execute('DELETE FROM products') # Clear old data on restart
+    c.execute('INSERT INTO products (id, name) VALUES (1, "Red Widget")')
+    c.execute('INSERT INTO products (id, name) VALUES (2, "Blue Widget")')
+    c.execute('INSERT INTO products (id, name) VALUES (3, "Green Widget")')
+    conn.commit()
+    conn.close()
+
+# Initialize the database when the app starts
+init_db()
+
 
 @app.after_request
 def apply_insecure_defaults(response):
-    # VULNERABILITY 1: Cookie Problems
-    # Setting a tracking cookie without 'Secure', 'HttpOnly', or 'SameSite' flags.
+    # (Kept from previous steps for ZAP testing)
     response.set_cookie("user_session", "demo_user_12345")
-
-    # VULNERABILITY 2: Header Problems / Info Disclosure
-    # Explicitly revealing the backend technology stack versions.
     response.headers["X-Powered-By"] = "Flask/3.0.3 Python/3.10"
     response.headers["Server"] = "Ubuntu/22.04 LTS"
-
-    # Note: ZAP will also flag the *missing* headers here (Content-Security-Policy, 
-    # X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security)
     return response
 
 
@@ -37,25 +41,49 @@ def about():
 
 @app.route("/products")
 def products():
-    return render_template("products.html", products=PRODUCTS)
+    # Fetching all products safely (for the list page)
+    conn = sqlite3.connect('demo.db')
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM products")
+    items = [{"id": row[0], "name": row[1]} for row in c.fetchall()]
+    conn.close()
+    return render_template("products.html", products=items)
 
 
 @app.route("/product")
 def product():
     product_id = request.args.get("id", "")
-    selected = next(
-        (item for item in PRODUCTS if str(item["id"]) == product_id),
-        None,
-    )
+    
+    if not product_id:
+        return "Please provide a product id, e.g., /product?id=1"
+
+    # VULNERABILITY: SQL Injection
+    # The developer is directly concatenating user input into the SQL string 
+    # instead of using parameterized queries (e.g., "WHERE id = ?").
+    query = f"SELECT id, name FROM products WHERE id = {product_id}"
+
+    conn = sqlite3.connect('demo.db')
+    c = conn.cursor()
+
+    try:
+        c.execute(query)
+        selected = c.fetchone()
+    except sqlite3.Error as e:
+        # VULNERABILITY: Error-Based Information Disclosure
+        # Returning raw database errors to the screen makes SQLmap's job incredibly easy.
+        return f"Database error: {e}"
+    finally:
+        conn.close()
+
     if selected:
-        return f"Product ID: {selected['id']} - {selected['name']}"
+        # We also still have Reflected XSS here if the ID contains HTML!
+        return f"Product ID: {selected[0]} - {selected[1]}"
+
     return f"No product found for id={product_id}"
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    # VULNERABILITY 3: Passive Web Risks
-    # A simple login form missing CSRF protection and allowing password autocomplete.
     if request.method == "POST":
         return "Login attempted (but not implemented)!"
     return render_template("login.html")
@@ -63,8 +91,6 @@ def login():
 
 @app.route("/api/debug")
 def debug_info():
-    # VULNERABILITY 4: Information Disclosure
-    # A junior developer left a debug endpoint exposed that leaks internal paths and configs.
     debug_data = {
         "status": "running",
         "db_connection": "mysql://root:supersecret123@127.0.0.1:3306/prod_db",
@@ -75,5 +101,4 @@ def debug_info():
 
 
 if __name__ == "__main__":
-    # Binding to 0.0.0.0 is slightly more realistic for a dev trying to access from another machine
     app.run(host="0.0.0.0", port=5000, debug=False)
