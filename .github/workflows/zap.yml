@@ -45,19 +45,18 @@ jobs:
           echo "Demo app failed to start"
           exit 1
 
-      - name: Run ZAP Baseline
+      - name: Run ZAP Full Scan (Active)
         run: |
           mkdir -p zap-reports
-
-          # Fix: Grant write permissions so the ZAP docker container can output the report
           chmod 777 zap-reports
 
           docker run --rm \
             --network host \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
             -t ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py \
+            zap-full-scan.py \
             -t http://localhost:5000 \
+            -I \
             -r zap-report.html || true
 
       - name: Upload ZAP report
