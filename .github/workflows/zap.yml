@@ -49,6 +49,9 @@ jobs:
         run: |
           mkdir -p zap-reports
 
+          # Fix: Grant write permissions so the ZAP docker container can output the report
+          chmod 777 zap-reports
+
           docker run --rm \
             --network host \
             -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
