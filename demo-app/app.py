@@ -4,7 +4,6 @@ from flask import Flask, render_template, request, make_response, jsonify
 app = Flask(__name__)
 
 # --- DATABASE SETUP ---
-# A junior dev might run this on startup to ensure the database exists.
 def init_db():
     conn = sqlite3.connect('demo.db')
     c = conn.cursor()
@@ -22,7 +21,6 @@ init_db()
 
 @app.after_request
 def apply_insecure_defaults(response):
-    # (Kept from previous steps for ZAP testing)
     response.set_cookie("user_session", "demo_user_12345")
     response.headers["X-Powered-By"] = "Flask/3.0.3 Python/3.10"
     response.headers["Server"] = "Ubuntu/22.04 LTS"
@@ -41,7 +39,6 @@ def about():
 
 @app.route("/products")
 def products():
-    # Fetching all products safely (for the list page)
     conn = sqlite3.connect('demo.db')
     c = conn.cursor()
     c.execute("SELECT id, name FROM products")
@@ -57,9 +54,6 @@ def product():
     if not product_id:
         return "Please provide a product id, e.g., /product?id=1"
 
-    # VULNERABILITY: SQL Injection
-    # The developer is directly concatenating user input into the SQL string 
-    # instead of using parameterized queries (e.g., "WHERE id = ?").
     query = f"SELECT id, name FROM products WHERE id = {product_id}"
 
     conn = sqlite3.connect('demo.db')
@@ -69,24 +63,15 @@ def product():
         c.execute(query)
         selected = c.fetchone()
     except sqlite3.Error as e:
-        # VULNERABILITY: Error-Based Information Disclosure
-        # Returning raw database errors to the screen makes SQLmap's job incredibly easy.
         return f"Database error: {e}"
     finally:
         conn.close()
 
     if selected:
-        # We also still have Reflected XSS here if the ID contains HTML!
         return f"Product ID: {selected[0]} - {selected[1]}"
 
     return f"No product found for id={product_id}"
 
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        return "Login attempted (but not implemented)!"
-    return render_template("login.html")
 
 
 @app.route("/api/debug")

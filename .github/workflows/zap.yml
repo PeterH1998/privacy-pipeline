@@ -1,16 +1,14 @@
-name: ZAP Baseline Scan
+name: ZAP Scan
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
     branches: ["main"]
 
   workflow_dispatch:
 
 jobs:
-  zap-baseline:
-    name: ZAP Baseline Scan
+  zap_scan:
+    name: ZAP Scan
     runs-on: ubuntu-latest
 
     steps:
