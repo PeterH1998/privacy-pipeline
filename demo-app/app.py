@@ -9,15 +9,15 @@ def init_db():
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT)')
     c.execute('DELETE FROM products') # Clear old data on restart
-    c.execute('INSERT INTO products (id, name) VALUES (1, "Red Widget")')
-    c.execute('INSERT INTO products (id, name) VALUES (2, "Blue Widget")')
-    c.execute('INSERT INTO products (id, name) VALUES (3, "Green Widget")')
+    c.execute('INSERT INTO products (id, name) VALUES (1, "Product A")')
+    c.execute('INSERT INTO products (id, name) VALUES (2, "Product B")')
+    c.execute('INSERT INTO products (id, name) VALUES (3, "Product C")')
     conn.commit()
     conn.close()
 
-# Initialize the database when the app starts
 init_db()
 
+ #Insecure headers and cookie
 
 @app.after_request
 def apply_insecure_defaults(response):
@@ -31,10 +31,6 @@ def apply_insecure_defaults(response):
 def index():
     return render_template("index.html")
 
-
-@app.route("/about")
-def about():
-    return render_template("about.html")
 
 
 @app.route("/products")
@@ -73,16 +69,6 @@ def product():
     return f"No product found for id={product_id}"
 
 
-
-@app.route("/api/debug")
-def debug_info():
-    debug_data = {
-        "status": "running",
-        "db_connection": "mysql://root:supersecret123@127.0.0.1:3306/prod_db",
-        "internal_path": "/var/www/demo-app/app.py",
-        "admin_email": "sysadmin@internal.local"
-    }
-    return jsonify(debug_data)
 
 
 if __name__ == "__main__":

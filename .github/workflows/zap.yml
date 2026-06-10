@@ -43,7 +43,7 @@ jobs:
           echo "Demo app failed to start"
           exit 1
 
-      - name: Run ZAP Full Scan (Active)
+      - name: Run ZAP Full Scan
         run: |
           mkdir -p zap-reports
           chmod 777 zap-reports
@@ -60,5 +60,5 @@ jobs:
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
-          name: zap-baseline-report
+          name: zap-full-report
           path: zap-reports/zap-report.html
