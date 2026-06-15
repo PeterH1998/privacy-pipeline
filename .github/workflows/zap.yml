@@ -56,7 +56,6 @@ jobs:
             -t http://localhost:5000 \
             -I \
             -r zap-report.html || true
-      #test
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
