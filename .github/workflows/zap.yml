@@ -55,9 +55,11 @@ jobs:
             zap-full-scan.py \
             -t http://localhost:5000 \
             -I \
-            -r zap-report.html || true
+            -r zap-report.html \
+            -J zap-report.json \
+            -w zap-report.md || true
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         with:
           name: zap-full-report
-          path: zap-reports/zap-report.html
+          path: zap-reports/
