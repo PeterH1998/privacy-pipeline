@@ -109,7 +109,7 @@ def main():
         json_path = sys.argv[1]
 
     findings = extract_zap_alerts(json_path)
-    #print(json.dumps(findings, indent=2, ensure_ascii=False))
+    print(json.dumps(findings, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
