@@ -82,7 +82,7 @@ jobs:
       - name: Aggregate dynamic scan findings
         run: python aggregator.py zap-reports/zap-report.json sqlmap-reports/sqlmap-output.txt
 
-      - name: Generate AI remediation report
+      - name: Generate AI report
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.1-flash-lite

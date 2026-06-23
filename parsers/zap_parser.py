@@ -2,115 +2,79 @@ import json
 import re
 import sys
 from html import unescape
-from pathlib import Path
 
-
-def clean_text(value):
-    if value is None:
+def clean_html(text):
+    """A simple helper to remove HTML tags and decode HTML entities."""
+    if not text:
         return ""
-
-    text = str(value)
-    text = unescape(text)
-    text = re.sub(r"</p>\s*<p>", "\n", text)
-    text = re.sub(r"<br\s*/?>", "\n", text)
+    
+    # 1. Convert HTML entities (like &lt;) back to normal characters
+    text = unescape(str(text))
+    # 2. Swap break/paragraph tags for actual newlines so it reads nicely
+    text = re.sub(r"<br\s*/?>|</p>", "\n", text)
+    # 3. Strip all remaining HTML tags (anything inside < >)
     text = re.sub(r"<[^>]+>", "", text)
-    text = re.sub(r"\n\s*\n+", "\n", text)
+    
     return text.strip()
 
-
-def extract_severity(riskdesc):
-    cleaned = clean_text(riskdesc)
-
-    if not cleaned:
-        return "Unknown"
-
-    return cleaned.split("(", 1)[0].strip()
-
-
-def build_finding(alert, instance, site_name):
-    alert_name = clean_text(alert.get("alert") or alert.get("name"))
-    riskdesc = clean_text(alert.get("riskdesc"))
-    severity = extract_severity(riskdesc)
-
-    url = clean_text(instance.get("uri") or site_name)
-    method = clean_text(instance.get("method"))
-    parameter = clean_text(instance.get("param"))
-    evidence = clean_text(instance.get("evidence"))
-
-    return {
-        "source": "ZAP",
-        "name": alert_name,
-        "severity": severity,
-        "url": url,
-        "method": method,
-        "parameter": parameter,
-        "description": clean_text(alert.get("desc")),
-        "evidence": evidence,
-        "recommendation": clean_text(alert.get("solution")),
-        "cwe": clean_text(alert.get("cweid")),
-        "metadata": {
-            "plugin_id": clean_text(alert.get("pluginid")),
-            "alert_ref": clean_text(alert.get("alertRef")),
-            "risk_description": riskdesc,
-            "confidence": clean_text(alert.get("confidence")),
-            "systemic": alert.get("systemic", False),
-            "attack": clean_text(instance.get("attack")),
-            "other_info": clean_text(instance.get("otherinfo") or alert.get("otherinfo")),
-            "source_id": clean_text(alert.get("sourceid"))
-        }
-    }
-
-
-def finding_key(finding):
-    return (
-        finding["source"].lower(),
-        finding["name"].lower(),
-        finding["severity"].lower(),
-        finding["url"].lower(),
-        finding["method"].lower(),
-        finding["parameter"].lower(),
-        finding["evidence"].lower()
-    )
-
-
-def extract_zap_alerts(json_path):
-    report_path = Path(json_path)
-
-    with report_path.open("r", encoding="utf-8") as file:
-        data = json.load(file)
+def parse_zap_report(file_path):
+    # 1. Read the JSON file
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        return {"error": f"Could not find file: {file_path}"}
 
     findings = []
-    seen = set()
+    seen_duplicates = set() # We'll store unique IDs here to avoid duplicates
 
+    # 2. Loop through the sites scanned by ZAP
     for site in data.get("site", []):
-        site_name = clean_text(site.get("@name"))
+        site_name = site.get("@name", "UNKNOWN")
 
+        # 3. Loop through the security alerts found on this site
         for alert in site.get("alerts", []):
-            instances = alert.get("instances", [])
+            alert_name = clean_html(alert.get("name", alert.get("alert")))
+            
+            # ZAP formats risk as "High (Warning)". We just want the "High" part.
+            raw_risk = clean_html(alert.get("riskdesc", ""))
+            severity = raw_risk.split("(")[0].strip() if raw_risk else "Unknown"
 
-            if not instances:
-                instances = [{}]
+            # 4. Loop through the specific instances (URLs/Parameters) where it was found
+            # If there are no instances, we provide one empty dictionary to loop once
+            instances = alert.get("instances", [{}])
 
             for instance in instances:
-                finding = build_finding(alert, instance, site_name)
-                key = finding_key(finding)
+                url = clean_html(instance.get("uri", site_name))
+                method = clean_html(instance.get("method", ""))
+                parameter = clean_html(instance.get("param", ""))
+                evidence = clean_html(instance.get("evidence", ""))
 
-                if key not in seen:
-                    findings.append(finding)
-                    seen.add(key)
+                # Create a simple unique ID string to check if we've seen this exact flaw already
+                unique_id = f"{alert_name}_{severity}_{url}_{method}_{parameter}"
+
+                if unique_id not in seen_duplicates:
+                    # 5. Build the final finding
+                    findings.append({
+                        "source": "ZAP",
+                        "name": alert_name,
+                        "severity": severity,
+                        "url": url,
+                        "method": method,
+                        "parameter": parameter,
+                        "description": clean_html(alert.get("desc")),
+                        "evidence": evidence,
+                        "recommendation": clean_html(alert.get("solution")),
+                        "cwe": clean_html(alert.get("cweid"))
+                    })
+                    
+                    seen_duplicates.add(unique_id)
 
     return findings
 
-
-def main():
-    json_path = "tests/reports/zap-report.json"
-
-    if len(sys.argv) > 1:
-        json_path = sys.argv[1]
-
-    findings = extract_zap_alerts(json_path)
-    print(json.dumps(findings, indent=2, ensure_ascii=False))
-
-
 if __name__ == "__main__":
-    main()
+    # Get the file path from the terminal, or use a default
+    file_path = sys.argv[1] if len(sys.argv) > 1 else "zap-report.json"
+    
+    report_findings = parse_zap_report(file_path)
+    print(json.dumps(report_findings, indent=2, ensure_ascii=False))

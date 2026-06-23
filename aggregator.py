@@ -1,96 +1,54 @@
 import json
-import sys
-from pathlib import Path
-from urllib.parse import urlparse
+import os
 
-from parsers.zap_parser import extract_zap_alerts
-from parsers.sqlmap_parser import extract_sqlmap_alerts
-
-
-def get_url_path(url):
-    if not url:
-        return ""
-
-    parsed_url = urlparse(url)
-    return parsed_url.path.lower()
-
-
-def is_sql_injection(finding):
-    name = finding.get("name", "").lower()
-    return "sql injection" in name
-
-
-def same_location(first_finding, second_finding):
-    first_path = get_url_path(first_finding.get("url", ""))
-    second_path = get_url_path(second_finding.get("url", ""))
-
-    first_parameter = first_finding.get("parameter", "").lower()
-    second_parameter = second_finding.get("parameter", "").lower()
-
-    return first_path == second_path and first_parameter == second_parameter
-
-
-def overlaps_with_sqlmap(zap_finding, sqlmap_findings):
-    if not is_sql_injection(zap_finding):
-        return False
-
-    for sqlmap_finding in sqlmap_findings:
-        if is_sql_injection(sqlmap_finding) and same_location(zap_finding, sqlmap_finding):
-            return True
-
-    return False
-
-
-def aggregate_findings(zap_report_path, sqlmap_report_path):
-    zap_findings = extract_zap_alerts(zap_report_path)
-    sqlmap_findings = extract_sqlmap_alerts(sqlmap_report_path)
-
-    combined_findings = []
-
-    for sqlmap_finding in sqlmap_findings:
-        combined_findings.append(sqlmap_finding)
-
-    for zap_finding in zap_findings:
-        if overlaps_with_sqlmap(zap_finding, sqlmap_findings):
-            continue
-
-        combined_findings.append(zap_finding)
-
-    return combined_findings
-
-
-def print_summary(findings):
-    for finding in findings:
-        severity = finding.get("severity", "Unknown")
-        source = finding.get("source", "Unknown")
-        name = finding.get("name", "Unknown")
-        method = finding.get("method", "")
-        url = finding.get("url", "")
-        parameter = finding.get("parameter", "")
-
-        if parameter:
-            print(f"[{severity}] {source} | {name} | {method} {url} | param: {parameter}")
-        else:
-            print(f"[{severity}] {source} | {name} | {method} {url}")
-
+# 1. Import our custom parsers from the 'parsers' folder
+from parsers.sqlmap_parser import parse_sqlmap_report
+from parsers.zap_parser import parse_zap_report
 
 def main():
-    zap_report_path = Path("tests/reports/zap-report.json")
-    sqlmap_report_path = Path("tests/reports/sqlmap-output.txt")
+    # This master list will hold all vulnerabilities from every tool
+    all_findings = []
 
-    if len(sys.argv) == 3:
-        zap_report_path = Path(sys.argv[1])
-        sqlmap_report_path = Path(sys.argv[2])
+    # Define where our raw report files live
+    sqlmap_file = "tests/reports/sqlmap-output.txt"
+    zap_file = "tests/reports/zap-report.json"
 
-    findings = aggregate_findings(zap_report_path, sqlmap_report_path)
+    print("Starting security report aggregation...")
 
-    print_summary(findings)
+    # --- 2. Process SQLMap ---
+    print(f"Processing SQLMap report: {sqlmap_file}")
+    if os.path.exists(sqlmap_file):
+        sqlmap_results = parse_sqlmap_report(sqlmap_file)
+        
+        if isinstance(sqlmap_results, list):
+            all_findings.extend(sqlmap_results)
+            print(f"Success: Added {len(sqlmap_results)} SQLMap findings.")
+        else:
+            print(f"Error reading SQLMap: {sqlmap_results.get('error')}")
+    else:
+        print("Skipped: SQLMap report not found.")
 
-    with open("aggregated-findings.json", "w", encoding="utf-8") as file:
-        json.dump(findings, file, indent=2, ensure_ascii=False)
+    # --- 3. Process ZAP ---
+    print(f"Processing ZAP report: {zap_file}")
+    if os.path.exists(zap_file):
+        zap_results = parse_zap_report(zap_file)
+        
+        if isinstance(zap_results, list):
+            all_findings.extend(zap_results)
+            print(f"Success: Added {len(zap_results)} ZAP findings.")
+        else:
+            print(f"Error reading ZAP: {zap_results.get('error')}")
+    else:
+        print("Skipped: ZAP report not found.")
 
-    print()
-    print(f"Saved {len(findings)} findings to aggregated-findings.json")
+    # --- 4. Export the Final Master Report ---
+    output_file = "master_vulnerability_report.json"
+    print(f"Saving combined results to {output_file}...")
+    
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(all_findings, f, indent=2, ensure_ascii=False)
+    
+    print(f"Aggregation complete. Total findings saved: {len(all_findings)}")
 
 if __name__ == "__main__":
     main()
