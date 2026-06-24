@@ -7,24 +7,25 @@ from google import genai
 
 MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 INPUT_FILE = Path("aggregated-findings.json")
-OUTPUT_FILE = Path("remediation-report.md")
+OUTPUT_FILE = Path("agent-report.md")
 
 
 SYSTEM_PROMPT = """
-Your role is a DevOps remediation assistant.
+Your role is a DevOps fix guidance assistant.
 
-Create a clear Markdown remediation report from security scanner findings.
+Create a clear Markdown fix report from security scanner findings.
 
 Rules:
-- Use only the findings provided.
-- Do not invent vulnerabilities.
-- Do not use the word Critical unless a finding has severity Critical.
-- Do not add tools that are not mentioned in the project.
-- Focus on risk, evidence, and safe remediation.
-- Prioritize High findings first, then Medium findings.
-- Keep the explanation clear and simple.
-- Mention the scanner source.
-- Output only Markdown.
+
+    Use only the findings provided.
+    Do not invent vulnerabilities.
+    Do not use the word Critical unless a finding has severity Critical.
+    Do not add tools that are not mentioned in the project.
+    Focus on risk, evidence, and safe fix guidance.
+    Prioritize High findings first, then Medium findings.
+    Keep the explanation clear and simple.
+    Mention the scanner source.
+    Output only Markdown.
 """
 
 
@@ -91,17 +92,17 @@ def build_prompt(findings):
     return f"""
 {SYSTEM_PROMPT}
 
-Create a remediation report for these findings:
+Create a fix report for these findings:
 
 {findings_json}
 
 Use this structure:
 
-# Remediation Report
+fix Report
 
-## Executive Summary
+Executive Summary
 
-## Prioritized Findings
+Prioritized Findings
 
 For each finding include:
 - Severity
@@ -109,9 +110,9 @@ For each finding include:
 - Affected location
 - Evidence
 - Why it matters
-- Recommended remediation
+- Recommended fixes
 
-## Suggested Remediation Order
+Suggested fix Order
 
 """
 
@@ -142,7 +143,7 @@ def main():
     key_findings = select_key_findings(findings)
 
     if not key_findings:
-        print("No remediation report was generated. (No key findings found)")
+        print("No fix report was generated. (No key findings found)")
         return
 
     prompt = build_prompt(key_findings)

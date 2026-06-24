@@ -8,7 +8,7 @@ on:
 
 jobs:
   dynamic_security_scan:
-    name: ZAP + SQLMap + AI Remediation
+    name: ZAP + SQLMap + Agent
     runs-on: ubuntu-latest
 
     permissions:
@@ -86,13 +86,13 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.1-flash-lite
-        run: python scripts/remediation_agent.py
+        run: python scripts/agent.py
 
-      - name: Add remediation report to job summary
+      - name: Add report to job summary
         run: |
-          echo "# AI Remediation Report" >> $GITHUB_STEP_SUMMARY
+          echo "# Agent  Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          cat remediation-report.md >> $GITHUB_STEP_SUMMARY
+          cat agent-report.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload sequrity reports
         uses: actions/upload-artifact@v4
@@ -103,4 +103,4 @@ jobs:
             zap-reports/
             sqlmap-reports/
             aggregated-findings.json
-            remediation-report.md
+            agent-report.md
