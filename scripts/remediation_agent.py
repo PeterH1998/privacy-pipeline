@@ -5,14 +5,13 @@ from pathlib import Path
 
 from google import genai
 
-
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 INPUT_FILE = Path("aggregated-findings.json")
 OUTPUT_FILE = Path("remediation-report.md")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
 
 SYSTEM_PROMPT = """
-You are a DevSecOps remediation assistant.
+Your role is a DevOps remediation assistant.
 
 Create a clear Markdown remediation report from security scanner findings.
 
@@ -21,10 +20,9 @@ Rules:
 - Do not invent vulnerabilities.
 - Do not use the word Critical unless a finding has severity Critical.
 - Do not add tools that are not mentioned in the project.
-- Do not provide offensive exploitation steps.
 - Focus on risk, evidence, and safe remediation.
 - Prioritize High findings first, then Medium findings.
-- Keep the explanation clear for a junior developer.
+- Keep the explanation clear and simple.
 - Mention the scanner source.
 - Output only Markdown.
 """
@@ -33,7 +31,6 @@ Rules:
 def load_findings(file_path):
     if not file_path.exists():
         print(f"Missing file: {file_path}")
-        print("Run this first: python aggregator.py")
         sys.exit(1)
 
     with file_path.open("r", encoding="utf-8") as file:
@@ -113,11 +110,9 @@ For each finding include:
 - Evidence
 - Why it matters
 - Recommended remediation
-- CWE, if available
 
 ## Suggested Remediation Order
 
-## Notes for CI/CD Integration
 """
 
 
@@ -126,8 +121,6 @@ def call_gemini(prompt):
 
     if not api_key:
         print("Missing GEMINI_API_KEY environment variable.")
-        print("Set it with:")
-        print('$env:GEMINI_API_KEY="PASTE_YOUR_API_KEY_HERE"')
         sys.exit(1)
 
     client = genai.Client(api_key=api_key)
@@ -149,8 +142,7 @@ def main():
     key_findings = select_key_findings(findings)
 
     if not key_findings:
-        print("No High or Medium findings found.")
-        print("No remediation report was generated.")
+        print("No remediation report was generated. (No key findings found)")
         return
 
     prompt = build_prompt(key_findings)
@@ -158,9 +150,7 @@ def main():
 
     save_report(report_text, OUTPUT_FILE)
 
-    print(f"Loaded {len(findings)} total findings.")
-    print(f"Sent {len(key_findings)} key findings to Gemini.")
-    print(f"Saved remediation report to {OUTPUT_FILE}")
+    print(f"Saved report to {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
