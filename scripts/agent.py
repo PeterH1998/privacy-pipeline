@@ -10,24 +10,6 @@ INPUT_FILE = Path("aggregated-findings.json")
 OUTPUT_FILE = Path("agent-report.md")
 
 
-SYSTEM_PROMPT = """
-Your role is a DevOps fix guidance assistant.
-
-Create a clear Markdown fix report from security scanner findings.
-
-Rules:
-
-    Use only the findings provided.
-    Do not invent vulnerabilities.
-    Do not use the word Critical unless a finding has severity Critical.
-    Do not add tools that are not mentioned in the project.
-    Focus on risk, evidence, and safe fix guidance.
-    Prioritize High findings first, then Medium findings.
-    Keep the explanation clear and simple.
-    Mention the scanner source.
-    Output only Markdown.
-"""
-
 
 def load_findings(file_path):
     if not file_path.exists():
@@ -90,7 +72,21 @@ def build_prompt(findings):
     findings_json = json.dumps(simplified_findings, indent=2, ensure_ascii=False)
 
     return f"""
-{SYSTEM_PROMPT}
+Your role is a DevOps fix guidance assistant.
+
+Your job is to create a clear Markdown fix report from security scanner findings.
+
+Rules:
+
+    Use only the findings provided.
+    Do not invent vulnerabilities.
+    Do not use the word Critical unless a finding has severity Critical.
+    Do not add tools that are not mentioned in the project.
+    Focus on risk, evidence, and safe fix guidance.
+    Prioritize High findings first, then Medium findings.
+    Keep the explanation clear and simple.
+    Mention the scanner source.
+    Output only Markdown.
 
 Create a fix report for these findings:
 
@@ -98,13 +94,13 @@ Create a fix report for these findings:
 
 Use this structure:
 
-fix Report
+1. Fix Report
 
-Executive Summary
+2. Executive Summary
 
-Prioritized Findings
+3. Prioritized Findings
 
-For each finding include:
+4. For each finding include:
 - Severity
 - Source scanner
 - Affected location
@@ -112,7 +108,7 @@ For each finding include:
 - Why it matters
 - Recommended fixes
 
-Suggested fix Order
+5. Suggested fix Order
 
 """
 
