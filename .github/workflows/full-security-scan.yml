@@ -36,7 +36,7 @@ jobs:
           python-version: "3.11"
       - name: Run PII Scanner
         continue-on-error: true
-        run: python piiscanner/piiscanner.py --exclude tests/ > pii-report.sarif || true
+        run: python piiscanner/piiscanner.py
       - uses: actions/upload-artifact@v4
         with:
           name: pii-report
@@ -82,7 +82,6 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          skip-dirs: tests/
           scanners: vuln
           severity: HIGH,CRITICAL
           format: sarif
