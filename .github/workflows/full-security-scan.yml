@@ -1,4 +1,4 @@
-name: Unified Security & Privacy Pipeline
+name: Security & Privacy Pipeline
 
 on:
   push:
@@ -148,7 +148,7 @@ jobs:
         run: python -m pip install -U google-genai
 
       - name: Aggregate all scan findings
-        run: python scripts/aggregator.py all-reports/
+        run: python aggregator.py all-reports/
 
       - name: Generate AI report
         env:
