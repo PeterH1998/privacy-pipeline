@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import sys
+import json
 
 EMAIL_PATTERN = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_PATTERN = re.compile(r"\+30\d{10}|\b\d{10}\b")
@@ -25,12 +26,10 @@ def mask_iban(iban):
     iban = iban.strip()
     return iban[:4] + "*" * (len(iban) - 4)
 
-
-
-
 def main():
     target_dir = Path(".")
     has_findings = False
+    exclude_dir = None
 
     if "--exclude" in sys.argv:
         exclude_index = sys.argv.index("--exclude")
@@ -40,6 +39,8 @@ def main():
     if not target_dir.exists():
         print("Couldn't find directory")
         sys.exit(0)
+
+    results = []
 
     for item in target_dir.rglob("*"):
         if item.is_file():
@@ -59,42 +60,70 @@ def main():
                     if email_matches:
                         has_findings = True
                         for match in email_matches:
-                            
                             masked_match = mask_email(match)
-
-                            print(f"file: {item}")
-                            print(f"line: {line_number}")
-                            print("type: email")
-                            print(f"match_preview: {masked_match}")
-                            print()
+                            results.append({
+                                "ruleId": "email",
+                                "message": {"text": f"match_preview: {masked_match}"},
+                                "locations": [{
+                                    "physicalLocation": {
+                                        "artifactLocation": {"uri": str(item.as_posix())},
+                                        "region": {"startLine": line_number}
+                                    }
+                                }]
+                            })
 
                     if phone_matches:
                         has_findings = True
                         for match in phone_matches:
                             masked_match = mask_phone(match)
-
-                            print(f"file: {item}")
-                            print(f"line: {line_number}")
-                            print("type: phone")
-                            print(f"match_preview: {masked_match}")
-                            print()
+                            results.append({
+                                "ruleId": "phone",
+                                "message": {"text": f"match_preview: {masked_match}"},
+                                "locations": [{
+                                    "physicalLocation": {
+                                        "artifactLocation": {"uri": str(item.as_posix())},
+                                        "region": {"startLine": line_number}
+                                    }
+                                }]
+                            })
                     
                     if iban_matches:
                         has_findings = True
                         for match in iban_matches:
                             masked_match = mask_iban(match)
+                            results.append({
+                                "ruleId": "iban",
+                                "message": {"text": f"match_preview: {masked_match}"},
+                                "locations": [{
+                                    "physicalLocation": {
+                                        "artifactLocation": {"uri": str(item.as_posix())},
+                                        "region": {"startLine": line_number}
+                                    }
+                                }]
+                            })
 
-                            print(f"file: {item}")
-                            print(f"line: {line_number}")
-                            print("type: iban")
-                            print(f"match_preview: {masked_match}")
-                            print()
-                
+
+    sarif_output = {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "Custom PII Scanner"
+                    }
+                },
+                "results": results
+            }
+        ]
+    }
+
+    print(json.dumps(sarif_output, indent=2))
+
     if has_findings:
         sys.exit(1)
     else:
         sys.exit(0)
-
 
 if __name__ == "__main__":
     main()

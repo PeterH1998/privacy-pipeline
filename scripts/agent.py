@@ -10,7 +10,6 @@ INPUT_FILE = Path("aggregated-findings.json")
 OUTPUT_FILE = Path("agent-report.md")
 
 
-
 def load_findings(file_path):
     if not file_path.exists():
         print(f"Missing file: {file_path}")
@@ -28,22 +27,18 @@ def severity_score(finding):
         "Low": 1,
         "Informational": 0
     }
-
     severity = finding.get("severity", "Informational")
     return scores.get(severity, 0)
 
 
 def select_key_findings(findings):
     selected = []
-
     for finding in findings:
         severity = finding.get("severity", "")
-
         if severity in ["Critical", "High", "Medium"]:
             selected.append(finding)
 
     selected.sort(key=severity_score, reverse=True)
-
     return selected
 
 
@@ -64,6 +59,7 @@ def simplify_finding(finding):
 
 
 def build_prompt(findings):
+    
     simplified_findings = []
 
     for finding in findings:
@@ -77,7 +73,6 @@ Your role is a DevOps fix guidance assistant.
 Your job is to create a clear Markdown fix report from security scanner findings.
 
 Rules:
-
     Use only the findings provided.
     Do not invent vulnerabilities.
     Do not use the word Critical unless a finding has severity Critical.
@@ -88,6 +83,11 @@ Rules:
     Mention the scanner source.
     Output only Markdown.
 
+    Categorization Rules:
+    - You must separate findings into two categories: "Dynamic Security Findings" and "Static Security Findings".
+    - Dynamic sources include: "ZAP", "SQLMap".
+    - Static sources include: "Trivy", "Gitleaks", "CodeQL", "Custom PII Scanner".
+    - Present Dynamic Security Findings first.
 Create a fix report for these findings:
 
 {findings_json}
@@ -95,12 +95,11 @@ Create a fix report for these findings:
 Use this structure:
 
 1. Fix Report
-
 2. Executive Summary
+3. Prioritized Dynamic Findings
+4. Prioritized Static Findings
 
-3. Prioritized Findings
-
-4. For each finding include:
+For each finding include:
 - Severity
 - Source scanner
 - Affected location
@@ -109,7 +108,6 @@ Use this structure:
 - Recommended fixes
 
 5. Suggested fix Order
-
 """
 
 
@@ -127,7 +125,23 @@ def call_gemini(prompt):
         contents=prompt
     )
 
-    return response.text
+    # Extract token usage metadata from the response
+    usage = response.usage_metadata
+    prompt_tokens = usage.prompt_token_count
+    candidate_tokens = usage.candidates_token_count
+    total_tokens = usage.total_token_count
+
+    # Format the token usage display
+    token_footer = (
+        f"\n\n---\n"
+        f"### 📊 AI Token Usage Metrics\n"
+        f"- **Prompt Tokens:** `{prompt_tokens}`\n"
+        f"- **Output Tokens:** `{candidate_tokens}`\n"
+        f"- **Total Tokens:** `{total_tokens}`\n"
+    )
+
+    # Append the token tracking to the generated report text
+    return response.text + token_footer
 
 
 def save_report(report_text, output_path):
@@ -146,7 +160,6 @@ def main():
     report_text = call_gemini(prompt)
 
     save_report(report_text, OUTPUT_FILE)
-
     print(f"Saved report to {OUTPUT_FILE}")
 
 
