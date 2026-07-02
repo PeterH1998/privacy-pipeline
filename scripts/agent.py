@@ -89,6 +89,7 @@ Rules:
     - Static sources include: "Trivy", "Gitleaks", "CodeQL", "Custom PII Scanner".
     - Don't include "ZAP", "SQLMap" findings in Static Findings
     - Present Dynamic Security Findings first.
+    - Findings like Missing Security Headers should be considered dynamic not static
 Create a fix report for these findings:
 
 {findings_json}

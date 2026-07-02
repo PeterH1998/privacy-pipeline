@@ -10,34 +10,39 @@ jobs:
     name: Secret Scan (Gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          report-format: sarif
-          report-path: gitleaks-report.sarif
-      - uses: actions/upload-artifact@v4
+        run: |
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks:latest \
+            git . \
+            --report-format sarif \
+            --report-path gitleaks-report.sarif \
+            --redact=100 \
+            --exit-code 0
+      - uses: actions/upload-artifact@v7
         with:
           name: gitleaks-report
           path: gitleaks-report.sarif
+          if-no-files-found: error
 
   pii_scan:
     name: Privacy Scan (PII)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Run PII Scanner
-        continue-on-error: true
-        run: python piiscanner/piiscanner.py
-      - uses: actions/upload-artifact@v4
+        run: |
+          python piiscanner/piiscanner.py > pii-report.sarif
+          python -m json.tool pii-report.sarif > /dev/null
+      - uses: actions/upload-artifact@v7
         with:
           name: pii-report
           path: pii-report.sarif
@@ -57,7 +62,7 @@ jobs:
           - language: python
             build-mode: none
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
@@ -66,7 +71,7 @@ jobs:
         with:
           category: "/language:${{matrix.language}}"
           output: codeql-results
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: codeql-report
           path: codeql-results/
@@ -75,7 +80,7 @@ jobs:
     name: Dependency Scan (Trivy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run Trivy FS Scan
         uses: aquasecurity/trivy-action@0.35.0
         continue-on-error: true
@@ -86,7 +91,7 @@ jobs:
           severity: HIGH,CRITICAL
           format: sarif
           output: trivy-report.sarif
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: trivy-report
           path: trivy-report.sarif
@@ -95,8 +100,8 @@ jobs:
     name: Dynamic Scan (ZAP + SQLMap)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install & Start Demo App
@@ -120,7 +125,7 @@ jobs:
         run: |
           mkdir -p sqlmap-reports
           docker run --rm --network host -v ${{ github.workspace }}/sqlmap-reports:/root/.local/share/sqlmap/output parrotsec/sqlmap -u "http://localhost:5000/product?id=1" --batch --answers="follow=Y,reduce=Y" --output-dir=/root/.local/share/sqlmap/output | tee sqlmap-reports/sqlmap-output.txt || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dynamic-reports
           path: |
@@ -133,13 +138,13 @@ jobs:
     needs: [secret_scan, pii_scan, sast_scan, dependency_scan, dynamic_scan]
     if: always()
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Download all reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: all-reports
 
@@ -162,7 +167,7 @@ jobs:
           cat agent-report.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Final Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: final-ai-report
           path: agent-report.md
