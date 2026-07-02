@@ -127,7 +127,7 @@ jobs:
             zap-reports/
             sqlmap-reports/
 
-  ai_reporting:
+  ai_report:
     name: Aggregate & AI Report
     runs-on: ubuntu-latest
     needs: [secret_scan, pii_scan, sast_scan, dependency_scan, dynamic_scan]
