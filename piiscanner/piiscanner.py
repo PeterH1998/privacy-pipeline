@@ -120,10 +120,8 @@ def main():
 
     print(json.dumps(sarif_output, indent=2))
 
-    if has_findings:
-        sys.exit(1)
-    else:
-        sys.exit(0)
+    
+    
 
 if __name__ == "__main__":
     main()

@@ -87,6 +87,7 @@ Rules:
     - You must separate findings into two categories: "Dynamic Security Findings" and "Static Security Findings".
     - Dynamic sources include: "ZAP", "SQLMap".
     - Static sources include: "Trivy", "Gitleaks", "CodeQL", "Custom PII Scanner".
+    - Don't include "ZAP", "SQLMap" findings in Static Findings
     - Present Dynamic Security Findings first.
 Create a fix report for these findings:
 
